@@ -1,0 +1,44 @@
+//****************************************************************************
+// FRAGMENT.CG
+// Fog effect
+// 
+// Author   :   Javier Palmer
+// Date     :   2/3/2005
+//
+// Written for the FATMAN Game
+//*****************************************************************************/
+struct vertout
+{
+    float4 HPosition    : POSITION;
+    float4 Color0       : COLOR0;
+    float4 Texture0     : TEXCOORD0;
+};
+
+struct pixel
+{
+	float4 color : COLOR;
+};
+
+pixel main( vertout indata,
+			 
+		  float fogexponent :TEXCOORD1,
+
+	uniform sampler2D decal
+)
+{
+	pixel OUT;
+
+	//factor de niebla.
+	float fogfactor = exp2(-abs(fogexponent)*1.8);
+	//color de textura
+	float4 decalcolor = tex2D(decal, indata.Texture0.xy);
+	//color actual por el de textura
+	float4 texcolor = indata.Color0 * decalcolor;
+	//color de la niebla
+	float4 fogcolor = {0.75,0.9,1.0,1.0};
+	//color de salida es: = media entre niebla y textura 
+	OUT.color.xyz = lerp(fogcolor.xyz,texcolor.xyz,fogfactor);
+	OUT.color.w = indata.Color0.w;
+	
+	return OUT;
+}

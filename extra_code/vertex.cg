@@ -1,0 +1,93 @@
+//****************************************************************************
+// FRAGMENT.CG
+// Fog effect, vertex animation, texture animation
+// 
+// Author   :   Javier Palmer
+// Date     :   2/3/2005
+//
+// Written for the FATMAN Game
+//*****************************************************************************/
+struct appin
+{   
+    float4 Position     : POSITION;
+    float4 TexCoord0	: TEXCOORD0;
+	float3 wave			: COLOR0;
+};
+
+struct vertout
+{
+    float4 HPosition    : POSITION;
+    float4 Color0       : COLOR0;
+    float4 Texture0     : TEXCOORD0;
+};
+
+vertout main(appin IN, 
+			 
+		out float fogexponent : TEXCOORD1,
+			 
+      uniform float4x4 ModelViewProj,    // Modelview-projection matrix
+      uniform float4x4 ModelView,        // Modelview matrix
+      uniform float4x4 ModelViewIT,      // Inverse transpose modelview matrix
+      uniform float4 Constants)
+{
+    vertout OUT;
+
+
+    float SinTime = Constants.x;
+    float ShowNormals = Constants.y;
+
+    float4 pos = float4(IN.Position.x, IN.Position.y, 0.0, 0.0);
+    float distance = 1/rsqrt(dot(pos, pos));
+
+    float cosVal;
+    float sinVal;
+    sincos(distance * SinTime , sinVal, cosVal);
+
+//    IN.Position.z += sinVal*0.8;
+//    IN.Position.y += cosVal*0.8;	
+
+	
+	//***** MOVIMIENTO DE VERTICES *****//	
+
+
+	IN.Position.y = ( sin(IN.wave.x + (IN.Position.x / 5.0) ) + sin(IN.wave.x + (IN.Position.z / 4.0) ) ) * 2.5f;
+    OUT.HPosition = mul(ModelViewProj, IN.Position);
+
+    // Calculate vertex normal
+    float4 normal;
+    normal.x = (IN.Position.x / distance) * cosVal;
+    normal.y = (IN.Position.y / distance) * cosVal;
+    normal.z = 1.0; normal.w = 1.0;
+
+    // transform normal from model-space to view-space
+    normal = normalize(mul(ModelViewIT, normal).xyz).xyzz;
+
+    // Output vertex color
+    if (ShowNormals == 1.0)
+        OUT.Color0 = normal;
+    else
+        OUT.Color0 = float4(1.0, 1.0, 1.0, 1.0);
+
+    float4 eye = normalize(mul(ModelView, IN.Position));
+    
+
+	//***** NIEBLA *****//
+
+    float3 eyeposition = mul(ModelView, IN.Position).xyz;
+    float fogdistance = length(eyeposition);
+    fogexponent = fogdistance * 0.015; ///ajusta este parámetro para la profundidad de la niebla!!.
+
+
+	//***** TEXTURA *****//     
+
+//Compute reflection vector for look up into cube map, 
+//(efecto de movimiento en la textura)
+//    float4 texCoord = eye - 2 * dot(eye, normal) * normal;
+//    float4 texCoord = pos - 2 * dot(eye, normal) * normal;
+//    OUT.Texture0 = texCoord;
+//    OUT.Texture0.w = 1.0;
+//si quieres ver la textura tal cual descomenta esto:
+    OUT.Texture0 = IN.TexCoord0;
+
+    return OUT;
+}
